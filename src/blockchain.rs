@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use block::Block;
+use block::{Block, current_time};
 
 #[derive(Default, Debug)]
 pub struct Blockchain<D, H>
@@ -54,7 +54,7 @@ where
             difficulty,
         );
         while !Self::validate_block(&block) {
-            block = block.increment_nonce();
+            block = block.increment_nonce(current_time());
         }
         self.blocks.push(block);
         self.blocks.last().unwrap() // Vec cannot be empty -> unwrap never fails

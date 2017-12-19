@@ -171,28 +171,24 @@ where
         self.nonce
     }
 
-    /// Sets the nonce to an arbitrary value and updates the `time` attribute. The method returns a
-    /// new block and consumes the old one.
+    /// Sets the nonce to an arbitrary value and sets the the `time` attribute. The method returns
+    /// a new block and consumes the old one.
     ///
     /// # Examples
     /// ```
     /// extern crate sha2;
     /// # extern crate blockchain;
     /// # fn main() {
-    /// use blockchain::block::Block;
+    /// use blockchain::block::{Block, current_time};
     /// let block: Block<_, ::sha2::Sha256> = Block::new(42, 1);
-    /// let time = block.time();
-    /// let duration = ::std::time::Duration::from_secs(1);
-    /// ::std::thread::sleep(duration); // sleep to test if `time` changed
-    /// let block = block.set_nonce(1337);
+    /// let block = block.set_nonce(1337, 0);
     /// assert_eq!(block.nonce(), 1337);
-    /// assert_ne!(block.time(), time);
     /// # }
     /// ```
-    pub fn set_nonce(self, nonce: u64) -> Self {
+    pub fn set_nonce(self, nonce: u64, time: u64) -> Self {
         Self {
             nonce: nonce,
-            time: current_time(),
+            time: time,
             ..self
         }
     }
@@ -208,12 +204,12 @@ where
     /// use blockchain::block::Block;
     /// let block: Block<_, ::sha2::Sha256> = Block::new(42, 1);
     /// assert_eq!(block.nonce(), 0);
-    /// let block = block.increment_nonce();
+    /// let block = block.increment_nonce(0);
     /// assert_eq!(block.nonce(), 1);
     /// # }
-    pub fn increment_nonce(self) -> Self {
+    pub fn increment_nonce(self, time: u64) -> Self {
         let nonce = self.nonce;
-        self.set_nonce(nonce + 1)
+        self.set_nonce(nonce + 1, time)
     }
 }
 
@@ -231,7 +227,8 @@ where
     }
 }
 
-fn current_time() -> u64 {
+/// Returns the time in seconds since `1970-01-01`.
+pub fn current_time() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()   // TODO: don't unwrap()

@@ -9,7 +9,7 @@ use super::{BlockchainError, PersistingError};
 use serde::ser::{Serialize, Serializer};
 use serde::de::{Deserialize, Deserializer};
 
-use block::Block;
+use block::{Block, current_time};
 use chain::Chain;
 
 #[derive(Debug, Clone)]
@@ -91,7 +91,8 @@ where
                     acc.1 &&
                         acc.0
                             .map(|b| {
-                                *b.prev_hash() == blk.hash() && Self::validate_block(blk).is_ok()
+                                *b.prev_hash() == blk.hash() && b.time() >= blk.time() &&
+                                    Self::validate_block(blk).is_ok()
                             })
                             .unwrap_or(true),
                 )
@@ -161,7 +162,7 @@ where
             difficulty,
         );
         while Self::validate_block(&block).is_err() {
-            block = block.increment_nonce();
+            block = block.increment_nonce(current_time());
         }
         block
     }
