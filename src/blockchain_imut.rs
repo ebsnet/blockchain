@@ -27,8 +27,38 @@ where
     H: ::digest::Digest,
     <H as ::digest::FixedOutput>::OutputSize: Debug + Clone,
 {
+    /// Creates a new and empty blockchain.
+    ///
+    /// # Examples
+    /// ```
+    /// extern crate sha2;
+    /// # extern crate blockchain;
+    /// # fn main() {
+    /// use blockchain::blockchain_imut::Blockchain;
+    /// let bc: Blockchain<bool, sha2::Sha256> = Blockchain::new();
+    /// assert_eq!(bc.len(), 0);
+    /// # }
+    /// ```
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Returns the length of the blockchain.
+    ///
+    /// # Examples
+    /// ```
+    /// extern crate sha2;
+    /// # extern crate blockchain;
+    /// # fn main() {
+    /// use blockchain::blockchain_imut::Blockchain;
+    /// let bc: Blockchain<_, sha2::Sha256> = Blockchain::new();
+    /// assert_eq!(bc.len(), 0);
+    /// let bc = unsafe { bc.unchecked_append(3) };
+    /// assert_eq!(bc.len(), 1);
+    /// # }
+    /// ```
+    pub fn len(&self) -> usize {
+        self.blocks.len()
     }
 
     /// Appends a new block with difficulty 0 and an empty previous hash to the chain without
@@ -54,6 +84,24 @@ where
         Self { blocks: self.blocks.append(block) }
     }
 
+    /// Creates an iterator over the blockchain, that iterates the chain in reverse order (newest
+    /// block first).
+    ///
+    /// # Examples
+    /// ```
+    /// extern crate sha2;
+    /// # extern crate blockchain;
+    /// # fn main() {
+    /// use blockchain::blockchain_imut::Blockchain;
+    /// let bc: Blockchain<_, sha2::Sha256> = Blockchain::new();
+    /// let bc = bc.append(5, 0);
+    /// let bc = bc.append(42, 1);
+    /// let mut iter = bc.iter();
+    /// assert_eq!(iter.next().unwrap().data(), &42);
+    /// assert_eq!(iter.next().unwrap().data(), &5);
+    /// assert_eq!(iter.next(), None);
+    /// # }
+    /// ```
     pub fn iter(&self) -> ::chain::Iter<Block<D, H>> {
         self.blocks.iter()
     }
@@ -71,7 +119,7 @@ where
     /// # Examples
     ///
     /// ```
-    ///  extern crate sha2;
+    /// extern crate sha2;
     /// # extern crate blockchain;
     /// # fn main() {
     /// use blockchain::blockchain_imut::Blockchain;
