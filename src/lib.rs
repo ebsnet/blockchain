@@ -18,7 +18,8 @@ pub mod blockchain;
 pub mod blockchain_imut;
 pub mod block;
 
-mod chain;
+// only used internally. not exposed by the library
+mod stack;
 
 #[derive(Debug, Fail)]
 pub enum BlockchainError {

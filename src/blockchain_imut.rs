@@ -10,7 +10,7 @@ use serde::ser::{Serialize, Serializer};
 use serde::de::{Deserialize, Deserializer};
 
 use block::{Block, current_time};
-use chain::Chain;
+use stack::Stack;
 
 #[derive(Debug, Clone)]
 pub struct Blockchain<D, H>
@@ -18,9 +18,14 @@ where
     H: ::digest::Digest,
     <H as ::digest::FixedOutput>::OutputSize: Debug + Clone,
 {
-    blocks: Chain<Block<D, H>>,
+    blocks: Stack<Block<D, H>>,
 }
 
+// Clippy warns on missing `is_empty` method if a method `len` is available, since in many cases
+// `is_empty` might be implemented more efficient than `len`. Since the stack that is used for this
+// blockchain implements `len` in `O(1)`, this is not necessary.
+// https://rust-lang-nursery.github.io/rust-clippy/current/index.html#len_without_is_empty
+#[cfg_attr(feature = "cargo-clippy", allow(len_without_is_empty))]
 impl<D, H> Blockchain<D, H>
 where
     D: Default,
@@ -61,6 +66,29 @@ where
         self.blocks.len()
     }
 
+    /// Removes the latest block from the blockchain. Returns an optional reference to the removed
+    /// block and a new blockchain object.
+    ///
+    /// # Examples
+    /// ```
+    /// extern crate sha2;
+    /// # extern crate blockchain;
+    /// # fn main() {
+    /// use blockchain::blockchain_imut::Blockchain;
+    /// let bc: Blockchain<_, sha2::Sha256> = Blockchain::new();
+    /// let (head, bc) = bc.tail();
+    /// assert_eq!(head, None);
+    /// assert_eq!(bc.len(), 0);
+    /// let bc = bc.append(42, 0);
+    /// let (head, bc) = bc.tail();
+    /// assert_eq!(head.map(|b| b.data()), Some(&42));
+    /// assert_eq!(bc.len(), 0);
+    /// # }
+    /// ```
+    pub fn tail(&self) -> (Option<&Block<D, H>>, Blockchain<D, H>) {
+        let tail = self.blocks.tail();
+        (tail.0, Self { blocks: tail.1 })
+    }
     /// Appends a new block with difficulty 0 and an empty previous hash to the chain without
     /// checking. This method is unsafe in a logical sense and therefore marked as unsafe in the
     /// Rust sense. It might corrupt your blockchain, use with caution. For production use, you
@@ -102,7 +130,7 @@ where
     /// assert_eq!(iter.next(), None);
     /// # }
     /// ```
-    pub fn iter(&self) -> ::chain::Iter<Block<D, H>> {
+    pub fn iter(&self) -> ::stack::Iter<Block<D, H>> {
         self.blocks.iter()
     }
 }
@@ -216,6 +244,7 @@ where
     }
 
     /// Appends a new block. This method blocks until the given difficulty is reached.
+    ///
     /// # Examples
     /// ```
     /// extern crate sha2;
@@ -312,7 +341,7 @@ where
     where
         S: Deserializer<'de>,
     {
-        Ok(Self { blocks: Chain::deserialize(deserializer)? })
+        Ok(Self { blocks: Stack::deserialize(deserializer)? })
     }
 }
 

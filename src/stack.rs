@@ -1,3 +1,10 @@
+//! Implementation of a persistent stack, inspired by
+//! [Learning Rust With Entirely Too Many Linked
+//! Lists](http://cglab.ca/~abeinges/blah/too-many-lists/book/third.html). The stack contains
+//! reference counted nodes, implements push/append and pop/tail but never mutates itself.
+//! The implementation has been modified to contain a field `len` to enable getting the size of the
+//! stack in `O(1)`
+
 use std::fmt;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -7,8 +14,9 @@ use serde::de::{Deserialize, Deserializer, Visitor, SeqAccess};
 
 type Link<T> = Option<Arc<Node<T>>>;
 
+/// Persistent stack.
 #[derive(Debug, Clone)]
-pub struct Chain<T> {
+pub struct Stack<T> {
     head: Link<T>,
     len: usize,
 }
@@ -26,7 +34,7 @@ where
     next: Option<&'a Node<T>>,
 }
 
-impl<T> Chain<T> {
+impl<T> Stack<T> {
     pub fn new() -> Self {
         Default::default()
     }
@@ -45,16 +53,19 @@ impl<T> Chain<T> {
         Iter { next: self.head.as_ref().map(|node| &**node) }
     }
 
-    pub fn tail(&self) -> Self {
+    pub fn tail(&self) -> (Option<&T>, Self) {
         let new_len = if self.head.is_some() {
             self.len - 1
         } else {
             self.len
         };
-        Self {
-            head: self.head.as_ref().and_then(|node| node.next.clone()),
-            len: new_len,
-        }
+        (
+            self.head(),
+            Self {
+                head: self.head.as_ref().and_then(|node| node.next.clone()),
+                len: new_len,
+            },
+        )
     }
 
     pub fn head(&self) -> Option<&T> {
@@ -77,7 +88,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
     }
 }
 
-impl<T> Drop for Chain<T> {
+impl<T> Drop for Stack<T> {
     fn drop(&mut self) {
         let mut head = self.head.take();
         while let Some(node) = head {
@@ -90,13 +101,13 @@ impl<T> Drop for Chain<T> {
     }
 }
 
-impl<T> Default for Chain<T> {
+impl<T> Default for Stack<T> {
     fn default() -> Self {
         Self { head: None, len: 0 }
     }
 }
 
-impl<T> ::serde::Serialize for Chain<T>
+impl<T> ::serde::Serialize for Stack<T>
 where
     T: Serialize,
 {
@@ -112,14 +123,14 @@ where
     }
 }
 
-struct ChainVisitor<T>
+struct StackVisitor<T>
 where
     T: Serialize,
 {
-    marker: PhantomData<fn() -> Chain<T>>,
+    marker: PhantomData<fn() -> Stack<T>>,
 }
 
-impl<T> ChainVisitor<T>
+impl<T> StackVisitor<T>
 where
     T: Serialize,
 {
@@ -128,16 +139,16 @@ where
     }
 }
 
-impl<'de, T> Visitor<'de> for ChainVisitor<T>
+impl<'de, T> Visitor<'de> for StackVisitor<T>
 where
     T: Deserialize<'de> + Serialize,
 {
     // The type that our Visitor is going to produce.
-    type Value = Chain<T>;
+    type Value = Stack<T>;
 
     // Format a message stating what data this Visitor expects to receive.
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("a persistent list")
+        formatter.write_str("a persistent stack")
     }
 
     // Deserialize MyMap from an abstract "map" provided by the
@@ -149,7 +160,7 @@ where
     {
         // let mut map = MyMap::with_capacity(access.size_hint().unwrap_or(0));
         let mut vec = Vec::with_capacity(access.size_hint().unwrap_or(0));
-        let mut chain = Chain::new();
+        let mut chain = Stack::new();
 
         // While there are entries remaining in the input, add them
         // into our map.
@@ -167,7 +178,7 @@ where
 }
 
 // This is the trait that informs Serde how to deserialize MyMap.
-impl<'de, T> Deserialize<'de> for Chain<T>
+impl<'de, T> Deserialize<'de> for Stack<T>
 where
     T: Serialize + Deserialize<'de>,
 {
@@ -177,11 +188,11 @@ where
     {
         // Instantiate our Visitor and ask the Deserializer to drive
         // it over the input data, resulting in an instance of MyMap.
-        deserializer.deserialize_seq(ChainVisitor::new())
+        deserializer.deserialize_seq(StackVisitor::new())
     }
 }
 
-impl<T> PartialEq for Chain<T>
+impl<T> PartialEq for Stack<T>
 where
     T: PartialEq,
 {
@@ -197,13 +208,13 @@ mod tests {
 
     #[test]
     fn new() {
-        let chain: Chain<bool> = Chain::new();
+        let chain: Stack<bool> = Stack::new();
         assert_eq!(chain.len(), 0);
     }
 
     #[test]
     fn append() {
-        let chain = Chain::new();
+        let chain = Stack::new();
         assert_eq!(chain.head(), None);
         let chain = chain.append(false);
         assert_eq!(chain.head(), Some(&false));
@@ -211,37 +222,36 @@ mod tests {
 
     #[test]
     fn tail() {
-        let chain = Chain::new().append(1).append(2).append(3);
-        assert_eq!(chain.head(), Some(&3));
-        let chain = chain.tail();
-        assert_eq!(chain.head(), Some(&2));
-        let chain = chain.tail();
-        assert_eq!(chain.head(), Some(&1));
-        let chain = chain.tail();
-        assert_eq!(chain.head(), None);
-        let chain = chain.tail();
-        assert_eq!(chain.head(), None);
+        let chain = Stack::new().append(1).append(2).append(3);
+        let (head, chain) = chain.tail();
+        assert_eq!(head, Some(&3));
+        let (head, chain) = chain.tail();
+        assert_eq!(head, Some(&2));
+        let (head, chain) = chain.tail();
+        assert_eq!(head, Some(&1));
+        let (head, chain) = chain.tail();
+        assert_eq!(head, None);
         let chain = chain.append(1);
         assert_eq!(chain.head(), Some(&1));
-        let chain = chain.tail();
+        let (head, chain) = chain.tail();
         assert_eq!(chain.head(), None);
     }
 
     #[test]
     fn len() {
-        let chain = Chain::new();
+        let chain = Stack::new();
         assert_eq!(chain.len(), 0);
-        let chain = chain.tail();
+        let chain = chain.tail().1;
         assert_eq!(chain.len(), 0);
         let chain = chain.append(3).append(2).append(1);
         assert_eq!(chain.len(), 3);
-        let chain = chain.tail();
+        let chain = chain.tail().1;
         assert_eq!(chain.len(), 2);
-        let chain = chain.tail();
+        let chain = chain.tail().1;
         assert_eq!(chain.len(), 1);
-        let chain = chain.tail();
+        let chain = chain.tail().1;
         assert_eq!(chain.len(), 0);
-        let chain = chain.tail();
+        let chain = chain.tail().1;
         assert_eq!(chain.len(), 0);
         let chain = chain.append(3).append(2).append(1);
         assert_eq!(chain.len(), 3);
@@ -249,7 +259,7 @@ mod tests {
 
     #[test]
     fn iter() {
-        let chain = Chain::new();
+        let chain = Stack::new();
         let mut iter = chain.iter();
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next(), None);
@@ -262,7 +272,7 @@ mod tests {
         assert_eq!(iter.next(), None);
     }
 
-    impl<A> Arbitrary for Chain<A>
+    impl<A> Arbitrary for Stack<A>
     where
         A: Arbitrary + ::std::marker::Sync + Default + ::serde::Serialize,
     {
@@ -271,26 +281,26 @@ mod tests {
                 let s = g.size();
                 g.gen_range(0, s)
             };
-            (0..size).fold(Chain::new(), |acc, _| acc.append(Arbitrary::arbitrary(g)))
+            (0..size).fold(Stack::new(), |acc, _| acc.append(Arbitrary::arbitrary(g)))
         }
     }
 
     quickcheck! {
-        fn append_and_tail_is_identity(xs: Chain<bool>) -> bool {
-            let c2 = xs.append(false).tail();
+        fn append_and_tail_is_identity(xs: Stack<bool>) -> bool {
+            let c2 = xs.append(false).tail().1;
             c2 == xs
         }
     }
 
     quickcheck! {
-        fn tail_len(xs: Chain<bool>) -> bool {
+        fn tail_len(xs: Stack<bool>) -> bool {
             let len = xs.len();
-            len >= xs.tail().len()
+            len >= xs.tail().1.len()
         }
     }
 
     quickcheck! {
-        fn append_increases_length(xs: Chain<bool>) -> bool {
+        fn append_increases_length(xs: Stack<bool>) -> bool {
             let len = xs.len();
             len + 1 == xs.append(false).len()
         }
