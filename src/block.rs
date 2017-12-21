@@ -194,7 +194,7 @@ where
     }
 
     /// Increments the nonce by 1 and updates the `time` attribute. The method returns a new block
-    /// and consumes the old one.
+    /// and consumes the old one. If the nonce overflows, it will start again at 0.
     ///
     /// # Examples
     /// ```
@@ -206,10 +206,13 @@ where
     /// assert_eq!(block.nonce(), 0);
     /// let block = block.increment_nonce(0);
     /// assert_eq!(block.nonce(), 1);
+    /// let block = block.set_nonce(u64::max_value(), 0);
+    /// let block = block.increment_nonce(0);
+    /// assert_eq!(block.nonce(), 0);
     /// # }
     pub fn increment_nonce(self, time: u64) -> Self {
         let nonce = self.nonce;
-        self.set_nonce(nonce + 1, time)
+        self.set_nonce(nonce.wrapping_add(1), time)
     }
 }
 
