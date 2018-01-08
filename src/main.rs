@@ -1,7 +1,7 @@
 extern crate blockchain;
 extern crate sha2;
 
-use blockchain::blockchain_imut::Blockchain;
+use blockchain::blockchain::Blockchain;
 
 fn main() {
     let bc: Blockchain<u8, ::sha2::Sha256> = Blockchain::new();

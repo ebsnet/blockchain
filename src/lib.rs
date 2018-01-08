@@ -15,7 +15,6 @@ extern crate quickcheck;
 extern crate tempdir;
 
 pub mod blockchain;
-pub mod blockchain_imut;
 pub mod block;
 
 // only used internally. not exposed by the library
@@ -50,37 +49,5 @@ mod tests {
     struct Data {
         foo: u16,
         bar: bool,
-    }
-
-    // #[test]
-    fn blockchain_3_blocks() {
-        use blockchain::Blockchain;
-
-        let mut bc: Blockchain<_, ::sha2::Sha256> = Blockchain::new();
-        writeln!(std::io::stderr(), "valid: {:?}", bc.validate_chain()).unwrap();
-        {
-            let block = bc.append(5, 2);
-            // let block = bc.append(Data { foo: 3, bar: false }, 2);
-            writeln!(std::io::stderr(), "first block: {:?}", block).unwrap();
-            writeln!(std::io::stderr(), "first hash: {:?}", block.hash()).unwrap();
-        }
-        {
-            let block = bc.append(10, 2);
-            // let block = bc.append(Data { foo: 2, bar: false }, 2);
-            writeln!(std::io::stderr(), "second block: {:?}", block).unwrap();
-            writeln!(std::io::stderr(), "second hash: {:?}", block.hash()).unwrap();
-        }
-        {
-            let block = bc.append(20, 2);
-            // let block = bc.append(Data { foo: 5, bar: true }, 2);
-            writeln!(std::io::stderr(), "third block: {:?}", block).unwrap();
-            writeln!(std::io::stderr(), "third hash: {:?}", block.hash()).unwrap();
-        }
-        writeln!(std::io::stderr(), "valid: {:?}", bc.validate_chain()).unwrap();
-        unsafe {
-            let block = bc.unchecked_append(3);
-            writeln!(std::io::stderr(), "fourth (unchecked) block: {:?}", block).unwrap();
-        }
-        writeln!(std::io::stderr(), "valid: {:?}", bc.validate_chain()).unwrap();
     }
 }
