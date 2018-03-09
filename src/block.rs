@@ -1,6 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use generic_array::GenericArray;
+use generic_array::typenum::Unsigned;
 
 pub const VERSION: u8 = 1;
 
@@ -12,7 +13,7 @@ where
     version: u8,
     prev_hash: GenericArray<u8, H::OutputSize>,
     time: u64,
-    difficulty: u8,
+    difficulty: usize,
     nonce: u64,
     data: D,
 }
@@ -37,7 +38,8 @@ where
     /// assert_eq!(block.difficulty(), 1);
     /// # }
     /// ```
-    pub fn new(data: D, difficulty: u8) -> Self {
+    pub fn new(data: D, difficulty: usize) -> Self {
+        Self::assert_difficulty(difficulty);
         Self {
             data: data,
             difficulty: difficulty,
@@ -69,14 +71,29 @@ where
     pub fn new_with_hash(
         data: D,
         prev_hash: GenericArray<u8, H::OutputSize>,
-        difficulty: u8,
+        difficulty: usize,
     ) -> Self {
+        Self::assert_difficulty(difficulty);
         Self {
             data: data,
             prev_hash: prev_hash,
             difficulty: difficulty,
             ..Default::default()
         }
+    }
+
+    pub fn hash_length_byte() -> usize {
+        H::OutputSize::to_usize()
+    }
+
+    pub fn hash_length_bit() -> usize {
+        Self::hash_length_byte() * 8
+    }
+
+    #[inline]
+    fn assert_difficulty(difficulty: usize) {
+        assert!(Self::hash_length_bit() >= difficulty,
+                            "Difficulty cannot be larger than the hash length");
     }
 }
 
@@ -112,7 +129,7 @@ where
     /// assert_eq!(block.difficulty(), 1);
     /// # }
     /// ```
-    pub fn difficulty(&self) -> u8 {
+    pub fn difficulty(&self) -> usize {
         self.difficulty
     }
 

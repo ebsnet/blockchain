@@ -23,7 +23,7 @@ mod stack;
 #[derive(Debug, Fail)]
 pub enum BlockchainError {
     #[fail(display = "invalid block hash \"{}\" with difficluty {}", _0, _1)]
-    InvalidBlockHash(String, u8),
+    InvalidBlockHash(String, usize),
     #[fail(display = "invalid prev hash \"{}\", should be \"{}\"", _0, _1)]
     InvalidPrevHash(String, String),
     #[fail(display = "unknown block version: {}", _0)]

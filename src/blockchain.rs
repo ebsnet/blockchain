@@ -123,7 +123,7 @@ where
     /// use blockchain::blockchain::Blockchain;
     /// let bc: Blockchain<_, sha2::Sha256> = Blockchain::new();
     /// let bc = bc.append(5, 0);
-    /// let bc = bc.append(42, 1);
+    /// let bc = bc.append(42, 8);
     /// let mut iter = bc.iter();
     /// assert_eq!(iter.next().unwrap().data(), &42);
     /// assert_eq!(iter.next().unwrap().data(), &5);
@@ -153,9 +153,9 @@ where
     /// use blockchain::blockchain::Blockchain;
     /// let bc: Blockchain<_, sha2::Sha256> = Blockchain::new();
     /// assert!(bc.validate_chain());
-    /// let bc = bc.append(5, 1); // appends a block with data `5` and difficulty `1` to the chain
+    /// let bc = bc.append(5, 8); // appends a block with data `5` and difficulty `1` to the chain
     /// assert!(bc.validate_chain());
-    /// let bc = bc.append(42, 1);
+    /// let bc = bc.append(42, 8);
     /// assert!(bc.validate_chain());
     /// # }
     /// ```
@@ -186,7 +186,7 @@ where
     /// # fn main() {
     /// use blockchain::blockchain::Blockchain;
     /// let bc: Blockchain<_, sha2::Sha256> = Blockchain::new();
-    /// let block0 = bc.generate_block(42, 1);
+    /// let block0 = bc.generate_block(42, 8);
     /// let bc = bc.insert(block0);
     /// assert!(bc.is_ok());
     /// let bc = bc.unwrap().insert(Default::default()); // insertion if invalid block
@@ -220,18 +220,18 @@ where
     /// # fn main() {
     /// use blockchain::blockchain::Blockchain;
     /// let bc: Blockchain<_, sha2::Sha256> = Blockchain::new();
-    /// let block0 = bc.generate_block(42, 1);
+    /// let block0 = bc.generate_block(42, 8);
     /// let bc = bc.insert(block0.clone());
     /// assert!(bc.is_ok());
     /// let bc = bc.unwrap();
-    /// let block1 = bc.generate_block(1337, 1);
+    /// let block1 = bc.generate_block(1337, 8);
     /// let bc = bc.insert(block1);
     /// assert!(bc.is_ok());
     /// let bc = bc.unwrap().insert(block0); // after inserting block1, block0 is no longer valid
     /// assert!(bc.is_err());
     /// # }
     /// ```
-    pub fn generate_block(&self, data: D, difficulty: u8) -> Block<D, H> {
+    pub fn generate_block(&self, data: D, difficulty: usize) -> Block<D, H> {
         let mut block = Block::new_with_hash(
             data,
             self.blocks.head().map(|blk| blk.hash()).unwrap_or_default(),
@@ -252,10 +252,10 @@ where
     /// # fn main() {
     /// use blockchain::blockchain::Blockchain;
     /// let bc: Blockchain<_, sha2::Sha256> = Blockchain::new();
-    /// let bc = bc.append(5, 1); // appends a block with data `5` and difficulty `1` to the chain
+    /// let bc = bc.append(5, 8); // appends a block with data `5` and difficulty `1` to the chain
     /// # }
     /// ```
-    pub fn append(&self, data: D, difficulty: u8) -> Blockchain<D, H> {
+    pub fn append(&self, data: D, difficulty: usize) -> Blockchain<D, H> {
         self.insert(self.generate_block(data, difficulty)).expect(
             "This cannot happen!",
         ) // this cannot fail since we just created a valid block
@@ -263,9 +263,24 @@ where
 
     fn validate_block(block: &Block<D, H>) -> Result<(), BlockchainError> {
         let difficulty = block.difficulty();
-        let valid_difficulty = block.hash().iter().take(difficulty as usize).all(|&byte| {
-            byte == 0
-        });
+        let valid_difficulty = block.hash().iter().take((difficulty / 8) + 1)
+            .fold((difficulty, true), |(d, b), byte| {
+                let leading_zeros = byte.leading_zeros();
+                if d >= 8 {
+                    (d - 8, b && leading_zeros == 0)
+                } else {
+                    (d, leading_zeros >= d as u32)
+                }
+        }).1;
+        // let valid_difficulty = block.hash().iter().take((difficulty / 8) + 1).all(|&byte| {
+        //     let leading_zeros = byte.leading_zeros();
+        //     if difficulty >= 8 {
+        //         difficulty -= 8;
+        //         leading_zeros == 8
+        //     } else {
+        //         leading_zeros >= difficulty as u32
+        //     }
+        // });
         if block.version() != ::block::VERSION {
             Err(BlockchainError::UnknownVersion(block.version()))
         } else if !valid_difficulty {
