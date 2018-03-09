@@ -1,0 +1,21 @@
+[package]
+name = "blockchain"
+version = "0.1.0"
+authors = ["Valentin Brandl <vbrandl@riseup.net>"]
+
+[dependencies]
+bincode = "0.9.2"
+digest = "0.7.2"
+generic-array = { version = "0.9.0", features = ["serde"] }
+serde = "1.0.21"
+serde_derive = "1.0.21"
+sha2 = "0.7.0"
+failure = "0.1.1"
+
+[dev-dependencies]
+quickcheck = "0.5.0"
+tempdir = "0.3"
+
+[[bin]]
+name = "blockchain-bin"
+path = "src/main.rs"
