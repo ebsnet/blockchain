@@ -1,0 +1,12 @@
+[package]
+name = "worker"
+version = "0.1.0"
+authors = ["Valentin Brandl <vbrandl@riseup.net>"]
+
+[dependencies]
+clap = "2.31.1"
+env_logger = "0.5.3"
+failure = "0.1.1"
+log = "0.4.1"
+ring = "0.12.1"
+untrusted = "0.5.1"
