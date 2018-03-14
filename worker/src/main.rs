@@ -1,3 +1,6 @@
+#![feature(plugin, decl_macro)]
+#![plugin(rocket_codegen)]
+
 #[macro_use]
 extern crate clap;
 
@@ -7,11 +10,25 @@ extern crate failure;
 extern crate ring;
 extern crate untrusted;
 
+extern crate rocket;
+extern crate rocket_contrib;
+
 extern crate env_logger;
 #[macro_use]
 extern crate log;
 
-mod tx;
+extern crate data;
+
+mod cli;
+mod error;
+mod server;
+mod state;
+mod wrapper;
+
+use error::BlockchainError;
+use state::ServerState;
+
+use data::blockchain;
 
 use failure::Error;
 
@@ -22,17 +39,15 @@ use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::Path;
 
-const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
-const DEFAULT_KEY_PATH: &'static str = "./default.key";
-const DEFAULT_PORT: &'static str = "1337";
-const DEFAULT_BC_PATH: &'static str = "./blockchain.dat";
+const DEFAULT_KEY_PATH: &str = "./default.key";
+/// Default path to look for the blockchain.
+const DEFAULT_BC_PATH: &str = "./blockchain.dat";
+/// Default path for the webserver to listen on.
+const DEFAULT_PORT: &str = "1337";
+/// Default address for the webserver to listen on.
+const DEFAULT_ADDRESS: &str = "localhost";
+/// Size of Ed25519 keys.
 const KEY_SIZE: usize = 85;
-
-#[derive(Debug, Fail)]
-enum BlockchainError {
-    #[fail(display = "keypair {} already exists", path)]
-    KeyPairAlreadyExists { path: String },
-}
 
 fn read_keypair<P>(path: P) -> Result<Ed25519KeyPair, Error>
 where
@@ -65,19 +80,7 @@ where
 
 fn main() {
     env_logger::init();
-    let matches = clap_app!(blockchain =>
-                            (version: VERSION.unwrap_or("unknown"))
-                            (author: "Valentin Brandl <mail@vbrandl.net>")
-                            (about: "PoC blockchain")
-                            (@arg KEYPAIR: -k --keypair +takes_value "Path to the keypair (Defaults to ./default.key)")
-                            (@arg PORT: -p --port +takes_value "The HTTP port to listen on (Defaults to 1337)")
-                            (@arg BLOCKCHAIN: -b --blockchain +takes_value "Path to the persisted blockchain")
-                            (@subcommand generate_keypair =>
-                             (about: "Generates a new keypair")
-                             (version: "1.0")
-                             (@arg PATH: -p --path +takes_value "Path to write the keypair to (Defaults to ./default.key)")
-                             )
-                            ).get_matches();
+    let matches = cli::build_cli();
 
     // generate keypair and exit
     if let Some(matches) = matches.subcommand_matches("generate_keypair") {
@@ -92,15 +95,25 @@ fn main() {
         }
     }
 
-    let port: u16 = matches
-        .value_of("PORT") // load port from args
-        .unwrap_or(DEFAULT_PORT) // or fallback to default
-        .parse() // parse into u16
-        .expect("Cannot parse port"); // or fail
-    debug!("Using port {}", port);
-
     let key_path = matches.value_of("KEYPAIR").unwrap_or(DEFAULT_KEY_PATH);
     info!("Loading keypair from {}", key_path);
 
     let key_pair = read_keypair(key_path).expect("Invalid key data");
+
+    let data_path = matches.value_of("BLOCKCHAIN").unwrap_or(DEFAULT_BC_PATH);
+    let blockchain = ServerState::new(
+        blockchain::Blockchain::load_from_disk(data_path).unwrap_or_default(),
+        data_path.to_owned(),
+    );
+
+    let port = matches
+        .value_of("PORT")
+        .unwrap_or(DEFAULT_PORT)
+        .parse()
+        .expect("Cannot parse port");
+
+    let address = matches.value_of("ADDR").unwrap_or(DEFAULT_ADDRESS);
+    server::prepare_server(blockchain, address, port)
+        .expect("Error while creating the server")
+        .launch();
 }
