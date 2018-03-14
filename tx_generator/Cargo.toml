@@ -1,0 +1,26 @@
+[package]
+name = "tx_generator"
+version = "0.1.0"
+authors = ["Valentin Brandl <vbrandl@riseup.net>"]
+
+[dependencies]
+argon2rs = "0.2.5"
+clap = "2.31.1"
+env_logger = "0.5.3"
+failure = "0.1.1"
+log = "0.4.1"
+memsec = "0.5.1"
+rand = "0.4"
+ring = "0.11.0"
+rpassword = "2.0.0"
+rust-crypto = "0.2.36"
+seckey = "0.8.0"
+serde = "1.0.29"
+serde_derive = "1.0.29"
+serde_json = "1.0.11"
+untrusted = "0.5.1"
+
+data = { path = "../data" }
+
+[dev-dependencies]
+quickcheck = "0.6"
