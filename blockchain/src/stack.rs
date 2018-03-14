@@ -9,8 +9,8 @@ use std::fmt;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use serde::ser::{Serialize, Serializer, SerializeSeq};
-use serde::de::{Deserialize, Deserializer, Visitor, SeqAccess};
+use serde::ser::{Serialize, SerializeSeq, Serializer};
+use serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
 
 type Link<T> = Option<Arc<Node<T>>>;
 
@@ -50,7 +50,9 @@ impl<T> Stack<T> {
     }
 
     pub fn iter(&self) -> Iter<T> {
-        Iter { next: self.head.as_ref().map(|node| &**node) }
+        Iter {
+            next: self.head.as_ref().map(|node| &**node),
+        }
     }
 
     pub fn tail(&self) -> (Option<&T>, Self) {
@@ -135,7 +137,9 @@ where
     T: Serialize,
 {
     fn new() -> Self {
-        Self { marker: PhantomData }
+        Self {
+            marker: PhantomData,
+        }
     }
 }
 

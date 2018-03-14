@@ -92,8 +92,10 @@ where
 
     #[inline]
     fn assert_difficulty(difficulty: usize) {
-        assert!(Self::hash_length_bit() >= difficulty,
-                            "Difficulty cannot be larger than the hash length");
+        assert!(
+            Self::hash_length_bit() >= difficulty,
+            "Difficulty cannot be larger than the hash length"
+        );
     }
 }
 
@@ -278,8 +280,8 @@ where
     H: ::digest::Digest,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.version == other.version && self.prev_hash == other.prev_hash &&
-            self.difficulty == other.difficulty && self.nonce == other.nonce &&
-            self.time == other.time && self.data == other.data
+        self.version == other.version && self.prev_hash == other.prev_hash
+            && self.difficulty == other.difficulty && self.nonce == other.nonce
+            && self.time == other.time && self.data == other.data
     }
 }

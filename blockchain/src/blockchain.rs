@@ -9,7 +9,7 @@ use super::{BlockchainError, PersistingError};
 use serde::ser::{Serialize, Serializer};
 use serde::de::{Deserialize, Deserializer};
 
-use block::{Block, current_time};
+use block::{current_time, Block};
 use stack::Stack;
 
 #[derive(Debug, Clone)]
@@ -109,7 +109,9 @@ where
     /// ```
     pub unsafe fn unchecked_append(&self, data: D) -> Self {
         let block = Block::new(data, 0);
-        Self { blocks: self.blocks.append(block) }
+        Self {
+            blocks: self.blocks.append(block),
+        }
     }
 
     /// Creates an iterator over the blockchain, that iterates the chain in reverse order (newest
@@ -164,11 +166,11 @@ where
             .fold((None, true), |acc, blk| {
                 (
                     Some(blk),
-                    acc.1 &&
-                        acc.0
+                    acc.1
+                        && acc.0
                             .map(|b| {
-                                *b.prev_hash() == blk.hash() && b.time() >= blk.time() &&
-                                    Self::validate_block(blk).is_ok()
+                                *b.prev_hash() == blk.hash() && b.time() >= blk.time()
+                                    && Self::validate_block(blk).is_ok()
                             })
                             .unwrap_or(true),
                 )
@@ -196,16 +198,20 @@ where
     pub fn insert(&self, block: Block<D, H>) -> Result<Self, BlockchainError> {
         self.blocks
             .head()
-            .map_or(Ok(()), |head| if head.hash() == *block.prev_hash() {
-                Ok(())
-            } else {
-                Err(BlockchainError::InvalidPrevHash(
-                    format!("{:?}", block.prev_hash()),
-                    format!("{:?}", head.hash()),
-                ))
+            .map_or(Ok(()), |head| {
+                if head.hash() == *block.prev_hash() {
+                    Ok(())
+                } else {
+                    Err(BlockchainError::InvalidPrevHash(
+                        format!("{:?}", block.prev_hash()),
+                        format!("{:?}", head.hash()),
+                    ))
+                }
             })
             .and_then(|_| Self::validate_block(&block))
-            .map(|_| Self { blocks: self.blocks.append(block) })
+            .map(|_| Self {
+                blocks: self.blocks.append(block),
+            })
     }
 
     /// Generates a new block ready to append to the blockchain. The block will contain the hash of
@@ -256,14 +262,16 @@ where
     /// # }
     /// ```
     pub fn append(&self, data: D, difficulty: usize) -> Blockchain<D, H> {
-        self.insert(self.generate_block(data, difficulty)).expect(
-            "This cannot happen!",
-        ) // this cannot fail since we just created a valid block
+        self.insert(self.generate_block(data, difficulty))
+            .expect("This cannot happen!") // this cannot fail since we just created a valid block
     }
 
     fn validate_block(block: &Block<D, H>) -> Result<(), BlockchainError> {
         let difficulty = block.difficulty();
-        let valid_difficulty = block.hash().iter().take((difficulty / 8) + 1)
+        let valid_difficulty = block
+            .hash()
+            .iter()
+            .take((difficulty / 8) + 1)
             .fold((difficulty, true), |(d, b), byte| {
                 let leading_zeros = byte.leading_zeros();
                 if d >= 8 {
@@ -271,7 +279,8 @@ where
                 } else {
                     (d, leading_zeros >= d as u32)
                 }
-        }).1;
+            })
+            .1;
         // let valid_difficulty = block.hash().iter().take((difficulty / 8) + 1).all(|&byte| {
         //     let leading_zeros = byte.leading_zeros();
         //     if difficulty >= 8 {
@@ -328,7 +337,9 @@ where
     <H as ::digest::FixedOutput>::OutputSize: Debug + Clone,
 {
     fn default() -> Self {
-        Self { blocks: Default::default() }
+        Self {
+            blocks: Default::default(),
+        }
     }
 }
 
@@ -356,7 +367,9 @@ where
     where
         S: Deserializer<'de>,
     {
-        Ok(Self { blocks: Stack::deserialize(deserializer)? })
+        Ok(Self {
+            blocks: Stack::deserialize(deserializer)?,
+        })
     }
 }
 
@@ -378,10 +391,7 @@ mod tests {
 
     impl<A> Arbitrary for Blockchain<A, ::sha2::Sha256>
     where
-        A: Arbitrary
-            + ::std::marker::Sync
-            + Default
-            + ::serde::Serialize,
+        A: Arbitrary + ::std::marker::Sync + Default + ::serde::Serialize,
         for<'de> A: Deserialize<'de>,
     {
         fn arbitrary<G: Gen>(g: &mut G) -> Self {
@@ -410,9 +420,9 @@ mod tests {
     }
 
     quickcheck! {
-         fn append_results_in_valid_chain(chain: Blockchain<bool, ::sha2::Sha256>) -> bool {
-             let chain = chain.append(false, 1);
-             chain.validate_chain()
-         }
-     }
+        fn append_results_in_valid_chain(chain: Blockchain<bool, ::sha2::Sha256>) -> bool {
+            let chain = chain.append(false, 1);
+            chain.validate_chain()
+        }
+    }
 }
