@@ -1,6 +1,4 @@
-use crypto::buffer::{RefReadBuffer, RefWriteBuffer};
-use crypto::chacha20::ChaCha20;
-use crypto::symmetriccipher::{Decryptor, Encryptor};
+use openssl::symm;
 
 use failure::Error;
 
@@ -19,12 +17,10 @@ use std::path::Path;
 
 /// Default path for the key pair.
 pub const DEFAULT_KEY_PATH: &str = "./default.key";
-/// Size of Ed25519 keys.
-const KEY_SIZE: usize = 85;
 /// Size of the salt.
 const SALT_SIZE: usize = 32;
 /// Size of the nonce.
-const NONCE_SIZE: usize = 12;
+const NONCE_SIZE: usize = 16;
 /// Name of the environment variable where the password might be stored.
 const PWD_ENV: &str = "PRIVATE_KEY_PASS";
 
@@ -36,14 +32,6 @@ pub enum KeyError {
     ReadKeyError,
     #[fail(display = "Cannot generate key pair")]
     GenerateKeyError,
-}
-
-#[derive(Debug, Fail)]
-pub enum CryptoError {
-    #[fail(display = "Cannot decrypt data")]
-    DecryptError,
-    #[fail(display = "Cannot encrypt data")]
-    EncryptError,
 }
 
 ///  An encrypted key pair, holding the encrypted data, the nonce used to decrypt the data and the
@@ -65,7 +53,8 @@ impl EncryptedKeyPair {
         let rng = rand::SystemRandom::new();
         let pkcs8_bytes = Ed25519KeyPair::generate_pkcs8(&rng)?;
         let enc_bytes = encrypt(&pkcs8_bytes, &nonce, &enc_key)?
-            .into_iter()
+            .iter()
+            .cloned()
             .collect::<Vec<u8>>();
         Ok(Self {
             salt: salt,
@@ -122,7 +111,7 @@ impl KeyPair {
         let dec = decrypt(&enc_key_pair.key, &enc_key_pair.nonce, &encryption_key)?;
         let pair = KeyPair(
             SecKey::new(Ed25519KeyPair::from_pkcs8(::untrusted::Input::from(
-                &(*dec.read()),
+                &*dec.read(),
             ))?).map_err(|mut val| {
                 custom_zero(&mut val);
                 KeyError::SecureMemoryError // and return error
@@ -147,6 +136,7 @@ impl EncryptionKey {
         })?))
     }
 
+    #[cfg(test)]
     /// Wraps a byte array in a secure memory area.
     fn from_bytes(bytes: [u8; 32]) -> Result<Self, KeyError> {
         Ok(EncryptionKey(SecKey::new(bytes).map_err(|mut val| {
@@ -185,34 +175,29 @@ where
 }
 
 /// Decrypt data into a secret memory area using a supplied nonce and encryption key using the
-/// `ChaCha20` algorithm.
+/// `AES` algorithm.
 fn decrypt(data: &[u8], nonce: &[u8], key: &EncryptionKey) -> Result<SecKey<Vec<u8>>, Error> {
-    let mut algo = ChaCha20::new(&(*key.0.read()), nonce);
-    let mut data = RefReadBuffer::new(data);
-    let mut out = Vec::new();
-    {
-        let mut out_writer = RefWriteBuffer::new(&mut out);
-        algo.decrypt(&mut data, &mut out_writer, false)
-            .map_err(|_| CryptoError::DecryptError)?;
-    } // mutable reference to `out` goes out of scope
-    let out = SecKey::new(out).map_err(|mut val| {
+    let dec = symm::decrypt(
+        symm::Cipher::aes_256_cbc(),
+        &*key.0.read(),
+        Some(nonce),
+        data,
+    )?;
+    Ok(SecKey::new(dec).map_err(|mut val| {
         custom_zero(&mut val);
-        KeyError::SecureMemoryError // and return error
-    })?;
-    Ok(out)
+        KeyError::SecureMemoryError
+    })?)
 }
 
-/// Encrypts data using a supplied nonce and encryption key using the `ChaCha20` algorithm.
+/// Encrypts data using a supplied nonce and encryption key using the `AES` algorithm.
 fn encrypt(data: &[u8], nonce: &[u8], key: &EncryptionKey) -> Result<Vec<u8>, Error> {
-    let mut algo = ChaCha20::new(&(*key.0.read()), nonce);
-    let mut data = RefReadBuffer::new(data);
-    let mut out = Vec::new();
-    {
-        let mut out_writer = RefWriteBuffer::new(&mut out);
-        algo.encrypt(&mut data, &mut out_writer, false)
-            .map_err(|_| CryptoError::EncryptError)?;
-    }
-    Ok(out)
+    let enc = symm::encrypt(
+        symm::Cipher::aes_256_cbc(),
+        &*key.0.read(),
+        Some(nonce),
+        data,
+    )?;
+    Ok(enc)
 }
 
 /// Generates a random salt.
@@ -243,10 +228,10 @@ mod test {
             let bytes = rng.gen::<[u8; 32]>(); // generate a random key
             let sec_key = EncryptionKey::from_bytes(bytes).unwrap();
             let nonce = random_nonce(); // generate a random nonce
-            let enc = encrypt(&data, &nonce, &sec_key).unwrap(); // encrypt the data
+            let enc = encrypt(&data, &nonce, &sec_key).unwrap();
             let dec = decrypt(&enc, &nonce, &sec_key).unwrap(); // decrypt the data
-            let dec_bytes = &*dec.read(); // read from secret memory
-            *dec_bytes == enc // compare
+            let dec = &*dec.read();
+            dec == &data // compare
         }
     }
 }
