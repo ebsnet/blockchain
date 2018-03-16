@@ -14,4 +14,4 @@ rocket_codegen = "0.3.6"
 rocket_contrib = "0.3.6"
 untrusted = "0.5.1"
 
-data = { path = "../data" }
+data = { path = "../../lib/data" }
