@@ -8,7 +8,7 @@ extern crate blockchain as bc;
 
 mod hack;
 
-pub mod key;
+// pub mod key;
 pub mod tx;
 
 pub use sha2::Sha256;
