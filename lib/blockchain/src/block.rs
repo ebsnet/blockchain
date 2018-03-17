@@ -247,6 +247,29 @@ where
     pub fn hash(&self) -> GenericArray<u8, H::OutputSize> {
         H::digest(&self.as_bytes())
     }
+
+    pub fn validate_difficulty(&self) -> bool {
+        self.hash()
+            .iter()
+            .take((self.difficulty / 8) + 1)
+            .fold((self.difficulty, true), |(d, b), byte| {
+                let leading_zeros = byte.leading_zeros();
+                if d >= 8 {
+                    (d - 8, b && leading_zeros == 0)
+                } else {
+                    (d, leading_zeros >= d as u32)
+                }
+            })
+            .1
+    }
+
+    pub fn proof_of_work(self) -> Self {
+        if self.validate_difficulty() {
+            self
+        } else {
+            self.increment_nonce(current_time()).proof_of_work()
+        }
+    }
 }
 
 /// Returns the time in seconds since `1970-01-01`.
