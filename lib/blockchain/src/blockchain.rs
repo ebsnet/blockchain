@@ -266,21 +266,8 @@ where
             .expect("This cannot happen!") // this cannot fail since we just created a valid block
     }
 
-    fn validate_block(block: &Block<D, H>) -> Result<(), BlockchainError> {
-        let difficulty = block.difficulty();
-        let valid_difficulty = block
-            .hash()
-            .iter()
-            .take((difficulty / 8) + 1)
-            .fold((difficulty, true), |(d, b), byte| {
-                let leading_zeros = byte.leading_zeros();
-                if d >= 8 {
-                    (d - 8, b && leading_zeros == 0)
-                } else {
-                    (d, leading_zeros >= d as u32)
-                }
-            })
-            .1;
+    pub fn validate_block(block: &Block<D, H>) -> Result<(), BlockchainError> {
+        let valid_difficulty = block.validate_difficulty();
         // let valid_difficulty = block.hash().iter().take((difficulty / 8) + 1).all(|&byte| {
         //     let leading_zeros = byte.leading_zeros();
         //     if difficulty >= 8 {
