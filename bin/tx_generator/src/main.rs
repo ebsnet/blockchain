@@ -29,6 +29,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
+extern crate client;
 extern crate data;
 
 #[cfg(test)]
@@ -38,7 +39,9 @@ extern crate quickcheck;
 mod cli;
 mod key;
 
-fn generate_tx() -> data::Transaction {
+use data::Block;
+
+fn generate_data() -> data::tx::Data {
     unimplemented!()
 }
 
@@ -66,7 +69,23 @@ fn main() {
         let pwd = key::get_password().expect("Cannot read password");
         let key_pair = key::KeyPair::from_file(key_path, &pwd).expect("Cannot read keypair");
         info!("Loading keypair from {}", key_path);
+        let client = client::Client::new(url);
 
-        let tx = generate_tx();
+        info!("Generating data");
+        let tx = generate_data();
+        info!("Signing data");
+        let signed_data = key::sign_data(&key_pair, tx).expect("Error while signing the data");
+        info!("Receiving latest block");
+        let latest = client
+            .latest_block()
+            .expect(&format!("Can't get latest block from {}", url));
+        info!("Generating new block");
+        let block: Block =
+            data::block::Block::new_with_hash(signed_data, latest.hash(), data::DIFFICULTY);
+        info!("Performing proof of work");
+        let block = block.proof_of_work();
+        client
+            .append(&block)
+            .expect("Error while appending the block");
     }
 }

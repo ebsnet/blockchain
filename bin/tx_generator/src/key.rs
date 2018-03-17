@@ -4,11 +4,13 @@ use failure::Error;
 
 use rand::Rng;
 
-use ring::signature::{Ed25519KeyPair, Signature};
+use ring::signature::Ed25519KeyPair;
 use ring::rand;
 
 use seckey::{zero, SecKey, SecReadGuard};
 use memsec::memzero;
+
+use data::tx::{Signable, SignedData, SIG_SIZE};
 
 use std::env;
 use std::fs::{File, OpenOptions};
@@ -30,8 +32,6 @@ pub enum KeyError {
     SecureMemoryError,
     #[fail(display = "Cannot read key")]
     ReadKeyError,
-    #[fail(display = "Cannot generate key pair")]
-    GenerateKeyError,
 }
 
 ///  An encrypted key pair, holding the encrypted data, the nonce used to decrypt the data and the
@@ -52,10 +52,7 @@ impl EncryptedKeyPair {
         let enc_key = EncryptionKey::new(pwd, &salt.iter().collect::<String>())?;
         let rng = rand::SystemRandom::new();
         let pkcs8_bytes = Ed25519KeyPair::generate_pkcs8(&rng)?;
-        let enc_bytes = encrypt(&pkcs8_bytes, &nonce, &enc_key)?
-            .iter()
-            .cloned()
-            .collect::<Vec<u8>>();
+        let enc_bytes = encrypt(&pkcs8_bytes, &nonce, &enc_key)?.to_vec();
         Ok(Self {
             salt: salt,
             nonce: nonce,
@@ -158,9 +155,17 @@ pub fn get_password() -> Result<Password, KeyError> {
 }
 
 /// Signs data using a `KeyPair`
-pub fn sign_data(key: &KeyPair, data: &[u8]) -> Signature {
+pub fn sign_data<S>(key: &KeyPair, data: S) -> Result<SignedData<S>, Error>
+where
+    S: Signable,
+{
     let key = key.0.read();
-    key.sign(data)
+    let signature = key.sign(&data.get_bytes()?);
+    let mut sig_bytes = [0u8; SIG_SIZE];
+    for (idx, val) in signature.as_ref().iter().take(SIG_SIZE).enumerate() {
+        sig_bytes[idx] = *val;
+    }
+    Ok(SignedData::new(sig_bytes, data))
 }
 
 /// Read a file into a string.
