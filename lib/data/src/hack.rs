@@ -1,6 +1,6 @@
 //! This is a workaround to derive `Serialize` and `Deserialize` for arrays > 32.
 //! By default serde only implements these traits for smaller arrays.
-//! The workaround is copied from https://github.com/serde-rs/serde/issues/631#issuecomment-322677033
+//! The workaround is copied from <https://github.com/serde-rs/serde/issues/631#issuecomment-322677033>
 
 use std::fmt;
 use std::marker::PhantomData;
@@ -52,8 +52,10 @@ macro_rules! big_array {
                             where A: SeqAccess<'de>
                         {
                             let mut arr = [T::default(); $len];
-                            for i in 0..$len {
-                                arr[i] = seq.next_element()?
+                            for (i, val) in arr.iter_mut().take($len).enumerate() {
+                                // for i in 0..$len {
+                                // arr[i] = seq.next_element()?
+                                *val = seq.next_element()?
                                     .ok_or_else(|| Error::invalid_length(i, &self))?;
                             }
                             Ok(arr)
