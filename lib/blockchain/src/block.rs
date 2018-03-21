@@ -255,9 +255,9 @@ where
             .fold((self.difficulty, true), |(d, b), byte| {
                 let leading_zeros = byte.leading_zeros();
                 if d >= 8 {
-                    (d - 8, b && leading_zeros == 0)
+                    (d - 8, b && leading_zeros == 8)
                 } else {
-                    (d, leading_zeros >= d as u32)
+                    (d, b && leading_zeros >= d as u32)
                 }
             })
             .1
