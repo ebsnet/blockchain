@@ -10,9 +10,30 @@ use error::BlockchainError;
 use state::ServerState;
 use data::Block;
 
+const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
+
 #[get("/")]
-fn index() -> &'static str {
-    "index"
+fn index() -> String {
+    format!(
+        r#"
+    Blockchain webservice v{}
+
+    The following operations are supported:
+
+    POST /append
+
+        Appends a new block (passed als "application/json")
+
+    GET /latest_block
+
+        Returns the latest block as a JSON string
+
+    POST /since_last_billing
+
+        Returns the part of the blockchain since the last billing for a specified user
+            "#,
+        VERSION.unwrap_or("unknown")
+    )
 }
 
 #[get("/latest_block")]
