@@ -8,15 +8,22 @@ pub fn build_cli() -> ::clap::ArgMatches<'static> {
               (author: "Valentin Brandl <mail@vbrandl.net>")
               (about: "Transaction generator")
               (@subcommand generate_keypair =>
-               (about: "Generates a new keypair")
+               (about: "Generates a new key pair")
                (version: "1.0")
-               (@arg PATH: -p --path +takes_value "Path to write the keypair to (Defaults to ./default.key)")
+               (@arg PATH: -p --path +takes_value "Path to write the key pair to (Defaults to ./default.key)")
               )
               (@subcommand generate_transaction =>
                (about: "Generates a new transaction, mines a block and appends it to the blockchain")
-               (version: "1.0")
-               (@arg KEYPAIR: -k --keypair +takes_value "Path to the keypair (Defaults to ./default.key)")
+               (version: VERSION.unwrap_or("unknown version"))
+               (@arg KEYPAIR: -k --keypair +takes_value "Path to the key pair (Defaults to ./default.key)")
                (@arg HOST: -h --host +takes_value +required "URL of the webservice")
+               (@arg USAGE: +required "Usage to be inserted into the blockchain")
+              )
+              (@subcommand export_public_key =>
+               (about: "Exports the public key associated with a key pair")
+               (version: VERSION.unwrap_or("unknown version"))
+               (@arg KEYPAIR: -k --keypair +takes_value "Path to the key pair (Defaults to ./default.key)")
+               (@arg PATH: +required "Output path")
               )
              ).get_matches()
 }
