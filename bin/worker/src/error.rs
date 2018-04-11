@@ -6,8 +6,8 @@ use rocket::{Request, Response};
 
 #[derive(Debug, Fail)]
 pub enum BlockchainError {
-    #[fail(display = "Key pair {} already exists", path)]
-    KeyPairAlreadyExists { path: String },
+    // #[fail(display = "Key pair {} already exists", path)]
+    // KeyPairAlreadyExists { path: String },
     #[fail(display = "Invalid block")]
     InvalidBlock,
     #[fail(display = "Cannot get lock")]

@@ -1,7 +1,7 @@
 //! Due to the way, server state is handled by rocket, we need a wrapper class around the
 //! functional implementation of the blockchain and work with impure functions.
 
-use data::{Block, Blockchain};
+use data::{BcIter, Block, Blockchain};
 
 use error::BlockchainError;
 
@@ -18,17 +18,24 @@ impl WrappedChain {
 
     /// Append a new block to the chain by modifying the struct (impure).
     pub fn append(&mut self, block: Block, path: &str) -> Result<(), BlockchainError> {
+        eprintln!("size before instert: {}", self.chain.len());
         if let Ok(new) = self.chain.insert(block) {
             self.chain = new;
+            eprintln!("size after instert: {}", self.chain.len());
             self.chain.persist_to_disk(path).ok();
             Ok(())
         } else {
+            eprintln!("wrapper append else");
             Err(BlockchainError::InvalidBlock)
         }
     }
 
     /// Returns a copy of the latest block.
     pub fn latest_block(&self) -> Option<Block> {
-        self.chain.tail().0.map(Clone::clone)
+        self.chain.tail().0.cloned()
+    }
+
+    pub fn iter(&self) -> BcIter {
+        self.chain.iter()
     }
 }

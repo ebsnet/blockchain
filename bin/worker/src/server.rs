@@ -8,7 +8,8 @@ use failure::Error;
 
 use error::BlockchainError;
 use state::ServerState;
-use data::Block;
+use data::{Block, Blockchain};
+use cryptography::BillingQuery;
 
 const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 
@@ -52,6 +53,14 @@ fn append(
         .map(|_| status::Custom(Status::Accepted, "block was appended"))
 }
 
+#[post("/since_latest_billing", format = "application/json", data = "<query>")]
+fn since_latest_billing(
+    state: State<ServerState>,
+    query: Json<BillingQuery>,
+) -> Result<Option<Json<Blockchain>>, BlockchainError> {
+    state.latest_billing(query.0).map(|opt| opt.map(Json))
+}
+
 // #[post("/user_tx", format = "application/json", data = "<key>")]
 // fn get_tx_from_user(
 //     state: State<ServerState>,
@@ -71,6 +80,9 @@ pub fn prepare_server(
         .finalize()?;
 
     Ok(::rocket::custom(config, true)
-        .mount("/", routes![index, latest_block, append])
+        .mount(
+            "/",
+            routes![index, latest_block, append, since_latest_billing],
+        )
         .manage(state))
 }

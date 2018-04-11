@@ -15,3 +15,4 @@ rocket_contrib = "0.3.6"
 untrusted = "0.5.1"
 
 data = { path = "../../lib/data" }
+cryptography = { path = "../../lib/cryptography" }
