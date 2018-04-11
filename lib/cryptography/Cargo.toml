@@ -1,0 +1,24 @@
+[package]
+name = "cryptography"
+version = "0.1.0"
+authors = ["Valentin Brandl <vbrandl@riseup.net>"]
+
+[dependencies]
+argon2rs = "0.2.5"
+failure = "0.1.1"
+memsec = "0.5.1"
+openssl = "0.10.5"
+rand = "0.4"
+ring = "0.11.0"
+rpassword = "2.0.0"
+seckey = "0.8.0"
+serde = "1.0.29"
+serde_derive = "1.0.29"
+serde_json = "1.0.11"
+sha2 = "0.7.0"
+untrusted = "0.5.1"
+
+data = { path = "../../lib/data" }
+
+[dev-dependencies]
+quickcheck = "0.6"
