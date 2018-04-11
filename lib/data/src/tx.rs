@@ -24,12 +24,22 @@ impl<T> SignedData<T> {
             data: data,
         }
     }
+
+    pub fn data(&self) -> &T {
+        &self.data
+    }
+
+    pub fn signature(&self) -> &Signature {
+        &self.signature
+    }
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+pub type Fingerprint = Vec<u8>;
+
+#[derive(Deserialize, Serialize, PartialEq, Clone)]
 pub enum Data {
-    Billing(String),
-    Usage(usize),
+    Billing(Fingerprint),
+    Usage(u64),
 }
 
 impl Signable for Data {
@@ -53,7 +63,7 @@ where
 
 impl Default for Data {
     fn default() -> Self {
-        Data::Billing("".to_owned())
+        Data::Billing(Default::default())
     }
 }
 

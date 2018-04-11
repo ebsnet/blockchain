@@ -25,6 +25,7 @@ pub const DIFFICULTY: usize = 3;
 pub type Blockchain = blockchain::Blockchain<tx::BlockData, Sha256>;
 /// Convenience wrapper for the Block struct.
 pub type Block = block::Block<tx::BlockData, Sha256>;
+pub type BcIter<'a> = blockchain::BlockchainIter<'a, tx::BlockData, Sha256>;
 
 #[cfg(test)]
 mod tests {
