@@ -7,4 +7,5 @@ authors = ["Valentin Brandl <vbrandl@riseup.net>"]
 failure = "0.1.1"
 reqwest = "0.8.5"
 
+cryptography = { path = "../cryptography" }
 data = { path = "../data" }

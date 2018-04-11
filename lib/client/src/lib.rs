@@ -1,3 +1,4 @@
+extern crate cryptography;
 extern crate data;
 #[macro_use]
 extern crate failure;
@@ -7,9 +8,9 @@ pub mod error;
 
 use error::ClientError;
 
-use failure::Error;
+use data::{Block, Blockchain};
 
-use data::Block;
+use cryptography::BillingQuery;
 
 use reqwest::StatusCode;
 
@@ -17,6 +18,7 @@ use reqwest::StatusCode;
 
 const ROUTE_LATEST_BLOCK: &str = "/latest_block";
 const ROUTE_APPEND: &str = "/append";
+const ROUTE_LATEST_BILLING: &str = "/since_latest_billing";
 
 pub struct Client<'a> {
     client: reqwest::Client,
@@ -24,10 +26,14 @@ pub struct Client<'a> {
 }
 
 impl<'a> Client<'a> {
-    pub fn new(host: &'a str) -> Self {
-        Self {
-            client: reqwest::Client::new(),
-            host: host,
+    pub fn new(host: &'a str) -> Result<Self, ClientError> {
+        if !(host.starts_with("http://") || host.starts_with("https://")) {
+            Err(ClientError::InvalidUrl)
+        } else {
+            Ok(Self {
+                client: reqwest::Client::new(),
+                host: host,
+            })
         }
     }
 
@@ -52,6 +58,18 @@ impl<'a> Client<'a> {
                     Err(ClientError::AppendBlock)
                 }
             })
+    }
+
+    pub fn since_latest_billing(
+        &self,
+        query: &BillingQuery,
+    ) -> Result<Option<Blockchain>, ClientError> {
+        self.client
+            .post(&format!("{}{}", self.host, ROUTE_LATEST_BILLING))
+            .json(query)
+            .send()
+            .and_then(|mut resp| resp.json())
+            .map_err(|_| ClientError::SinceLatestBilling)
     }
 }
 

@@ -21,6 +21,8 @@ where
     blocks: Stack<Block<D, H>>,
 }
 
+pub type BlockchainIter<'a, D, H> = ::stack::Iter<'a, Block<D, H>>;
+
 // Clippy warns on missing `is_empty` method if a method `len` is available, since in many cases
 // `is_empty` might be implemented more efficient than `len`. Since the stack that is used for this
 // blockchain implements `len` in `O(1)`, this is not necessary.
@@ -132,7 +134,7 @@ where
     /// assert_eq!(iter.next(), None);
     /// # }
     /// ```
-    pub fn iter(&self) -> ::stack::Iter<Block<D, H>> {
+    pub fn iter(&self) -> BlockchainIter<D, H> {
         self.blocks.iter()
     }
 }

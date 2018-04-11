@@ -4,4 +4,8 @@ pub enum ClientError {
     AppendBlock,
     #[fail(display = "Cannot get latest block")]
     LatestBlock,
+    #[fail(display = "Cannot get latest billing")]
+    SinceLatestBilling,
+    #[fail(display = "Invalid url")]
+    InvalidUrl,
 }

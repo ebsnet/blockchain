@@ -27,6 +27,7 @@ struct Node<T> {
     next: Link<T>,
 }
 
+#[derive(Clone)]
 pub struct Iter<'a, T>
 where
     T: 'a,

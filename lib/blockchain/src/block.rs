@@ -174,6 +174,10 @@ where
         &self.prev_hash
     }
 
+    pub fn is_genesis(&self) -> bool {
+        self.prev_hash().iter().all(|b| *b == 0)
+    }
+
     /// Returns the nonce.
     ///
     /// # Examples
