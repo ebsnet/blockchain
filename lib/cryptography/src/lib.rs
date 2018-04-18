@@ -1,3 +1,7 @@
+#![deny(warnings, missing_docs)]
+//! This crate provides functions for dealing with key pairs, handling secrets, signing data and
+//! validating signatures
+
 extern crate argon2rs;
 extern crate data;
 #[macro_use]
@@ -49,10 +53,13 @@ const NONCE_SIZE: usize = 16;
 /// Name of the environment variable where the password might be stored.
 const PWD_ENV: &str = "PRIVATE_KEY_PASS";
 
+/// Errors that can occur when working with key pairs
 #[derive(Debug, Fail)]
 pub enum KeyError {
+    /// Initializing secure memory failed
     #[fail(display = "Cannot create secure memory")]
     SecureMemoryError,
+    /// Loading a key from disk failed
     #[fail(display = "Cannot read key")]
     ReadKeyError,
 }
@@ -140,11 +147,13 @@ impl KeyPair {
         Ok(pair)
     }
 
+    /// Returns the public key for a key pair.
     pub fn public_key_bytes(&self) -> PublicKey {
         PublicKey(self.0.read().public_key_bytes().to_vec())
     }
 }
 
+/// Wrapper for a public key.
 #[derive(Deserialize, Serialize, Clone)]
 pub struct PublicKey(Vec<u8>);
 
@@ -156,6 +165,7 @@ impl fmt::Display for PublicKey {
     }
 }
 
+/// Query that is send to the web service to receive the usage for a specified user.
 #[derive(Deserialize, Serialize)]
 pub struct BillingQuery {
     signee: PublicKey,
@@ -163,20 +173,25 @@ pub struct BillingQuery {
 }
 
 impl BillingQuery {
+    /// Creates a new billing query for a given signee (the provider, identified by its public key)
+    /// and a user (identified by its public key's fingerprint).
     pub fn new(signee: PublicKey, user: Fingerprint) -> Self {
         Self { signee, user }
     }
 
+    /// Returns the signee.
     pub fn signee(&self) -> &PublicKey {
         &self.signee
     }
 
+    /// Returns the user.
     pub fn user(&self) -> &Fingerprint {
         &self.user
     }
 }
 
 impl PublicKey {
+    /// Loads a public key from a file.
     pub fn load_from_file<P>(path: P) -> Result<Self, Error>
     where
         P: AsRef<Path>,
@@ -187,14 +202,17 @@ impl PublicKey {
         Ok(PublicKey(content))
     }
 
+    /// Generates the SHA-2 fingerprint of a public key.
     pub fn fingerprint(&self) -> Fingerprint {
         sha2::Sha256::digest(&self.0).to_vec()
     }
 
+    /// Generates transaction data for a billing transaction for this public key.
     pub fn to_billing(&self) -> Data {
         Data::Billing(self.fingerprint())
     }
 
+    /// Returns a reference to the public key bytes.
     pub fn bytes(&self) -> &[u8] {
         &self.0
     }
@@ -216,7 +234,7 @@ impl EncryptionKey {
     }
 
     #[cfg(test)]
-    /// Wraps a byte array in a secure memory area.
+    /// Wraps a byte array in a secure memory area. (Only used for tests)
     fn from_bytes(bytes: [u8; 32]) -> Result<Self, KeyError> {
         Ok(EncryptionKey(SecKey::new(bytes).map_err(|mut val| {
             // store in secret memory
@@ -250,6 +268,7 @@ where
     Ok(SignedData::new(sig_bytes, data))
 }
 
+/// Validates a signature.
 pub fn validate_signature<S>(pub_key: &PublicKey, data: &SignedData<S>) -> Result<bool, Error>
 where
     S: Signable,

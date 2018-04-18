@@ -1,3 +1,5 @@
+//! This module contains the definition of a generic blockchain.
+
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::prelude::*;
@@ -12,6 +14,7 @@ use serde::de::{Deserialize, Deserializer};
 use block::{current_time, Block};
 use stack::Stack;
 
+/// The blockchain itself as a stack of blocks.
 #[derive(Debug, Clone)]
 pub struct Blockchain<D, H>
 where
@@ -21,13 +24,9 @@ where
     blocks: Stack<Block<D, H>>,
 }
 
+/// Iterator over a blockchain. This wraps a stack iterator over generic blocks.
 pub type BlockchainIter<'a, D, H> = ::stack::Iter<'a, Block<D, H>>;
 
-// Clippy warns on missing `is_empty` method if a method `len` is available, since in many cases
-// `is_empty` might be implemented more efficient than `len`. Since the stack that is used for this
-// blockchain implements `len` in `O(1)`, this is not necessary.
-// https://rust-lang-nursery.github.io/rust-clippy/current/index.html#len_without_is_empty
-#[cfg_attr(feature = "cargo-clippy", allow(len_without_is_empty))]
 impl<D, H> Blockchain<D, H>
 where
     D: Default,
@@ -68,6 +67,25 @@ where
         self.blocks.len()
     }
 
+    /// Checks if the chain is empty. The clippy linter requires this method since in many cases
+    /// this check is more efficient than checking the actual length. Not in this case.
+    ///
+    /// # Examples
+    /// ```
+    /// extern crate sha2;
+    /// # extern crate blockchain;
+    /// # fn main() {
+    /// use blockchain::blockchain::Blockchain;
+    /// let bc: Blockchain<_, sha2::Sha256> = Blockchain::new();
+    /// assert!(bc.is_empty());
+    /// let bc = unsafe { bc.unchecked_append(3) };
+    /// assert!(!bc.is_empty());
+    /// # }
+    /// ```
+    pub fn is_empty(&self) -> bool {
+        self.blocks.len() == 0
+    }
+
     /// Removes the latest block from the blockchain. Returns an optional reference to the removed
     /// block and a new blockchain object.
     ///
@@ -91,6 +109,7 @@ where
         let tail = self.blocks.tail();
         (tail.0, Self { blocks: tail.1 })
     }
+
     /// Appends a new block with difficulty 0 and an empty previous hash to the chain without
     /// checking. This method is unsafe in a logical sense and therefore marked as unsafe in the
     /// Rust sense. It might corrupt your blockchain, use with caution. For production use, you
@@ -268,17 +287,11 @@ where
             .expect("This cannot happen!") // this cannot fail since we just created a valid block
     }
 
+    /// Validates a block. The following properties are checked:
+    /// * The version number matches `block::VERSION`
+    /// * The difficulty factor matches the block's hash
     pub fn validate_block(block: &Block<D, H>) -> Result<(), BlockchainError> {
         let valid_difficulty = block.validate_difficulty();
-        // let valid_difficulty = block.hash().iter().take((difficulty / 8) + 1).all(|&byte| {
-        //     let leading_zeros = byte.leading_zeros();
-        //     if difficulty >= 8 {
-        //         difficulty -= 8;
-        //         leading_zeros == 8
-        //     } else {
-        //         leading_zeros >= difficulty as u32
-        //     }
-        // });
         if block.version() != ::block::VERSION {
             Err(BlockchainError::UnknownVersion(block.version()))
         } else if !valid_difficulty {
@@ -298,6 +311,7 @@ where
     H: ::digest::Digest,
     <H as ::digest::FixedOutput>::OutputSize: Debug + Clone,
 {
+    /// Persists a blockchain to disk.
     pub fn persist_to_disk<P: AsRef<Path>>(&self, filename: P) -> Result<(), ::failure::Error> {
         let encoded: Vec<u8> = ::bincode::serialize(self, ::bincode::Infinite)?;
         let mut file = BufWriter::new(File::create(filename)?);
@@ -312,6 +326,7 @@ where
     H: ::digest::Digest,
     <H as ::digest::FixedOutput>::OutputSize: Debug + Clone,
 {
+    /// Loads a blockchain from disk.
     pub fn load_from_disk<P: AsRef<Path>>(filename: P) -> Result<Self, PersistingError> {
         let mut file = BufReader::new(File::open(filename).map_err(|_| PersistingError::IoError)?);
         ::bincode::deserialize_from(&mut file, ::bincode::Infinite)

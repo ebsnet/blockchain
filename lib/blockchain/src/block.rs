@@ -1,10 +1,15 @@
+//! This module contains the definition of a generic block.
+
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use generic_array::GenericArray;
 use generic_array::typenum::Unsigned;
 
+/// Version number
 pub const VERSION: u8 = 1;
 
+/// A block that contains a version number, hash of the previous block, the time it was created,
+/// the difficulty factor, the `PoW` nonce and generic data.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Block<D, H>
 where
@@ -82,10 +87,12 @@ where
         }
     }
 
+    /// Returns the length of a hash in bytes.
     pub fn hash_length_byte() -> usize {
         H::OutputSize::to_usize()
     }
 
+    /// Returns the length of a hash in bits.
     pub fn hash_length_bit() -> usize {
         Self::hash_length_byte() * 8
     }
@@ -174,6 +181,7 @@ where
         &self.prev_hash
     }
 
+    /// Returns true if the block is a genesis block, e.g. its `prev_hash` is all 0x00.
     pub fn is_genesis(&self) -> bool {
         self.prev_hash().iter().all(|b| *b == 0)
     }
@@ -244,14 +252,17 @@ where
     D: ::serde::Serialize,
     H: ::digest::Digest,
 {
+    /// Serializes the block into a vec of bytes.
     pub fn as_bytes(&self) -> Vec<u8> {
         ::bincode::serialize(self, ::bincode::Infinite).unwrap()
     }
 
+    /// Calculates the hash value of a block.
     pub fn hash(&self) -> GenericArray<u8, H::OutputSize> {
         H::digest(&self.as_bytes())
     }
 
+    /// Validates if the block matches its own difficulty factor.
     pub fn validate_difficulty(&self) -> bool {
         self.hash()
             .iter()
@@ -267,6 +278,8 @@ where
             .1
     }
 
+    /// Performs proof of work by incrementing the nonce by `1`, if the difficulty factor does not
+    /// match. If the difficulty already matches, the block is returned without modification.
     pub fn proof_of_work(self) -> Self {
         if self.validate_difficulty() {
             self

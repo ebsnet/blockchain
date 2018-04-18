@@ -1,3 +1,7 @@
+#![deny(warnings, missing_docs)]
+//! This crate provides functionality to generate new usage transactions and append them to the
+//! blockchain.
+
 #[macro_use]
 extern crate clap;
 

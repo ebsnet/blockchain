@@ -18,14 +18,11 @@ impl WrappedChain {
 
     /// Append a new block to the chain by modifying the struct (impure).
     pub fn append(&mut self, block: Block, path: &str) -> Result<(), BlockchainError> {
-        eprintln!("size before instert: {}", self.chain.len());
         if let Ok(new) = self.chain.insert(block) {
             self.chain = new;
-            eprintln!("size after instert: {}", self.chain.len());
             self.chain.persist_to_disk(path).ok();
             Ok(())
         } else {
-            eprintln!("wrapper append else");
             Err(BlockchainError::InvalidBlock)
         }
     }

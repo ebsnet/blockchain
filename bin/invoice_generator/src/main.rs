@@ -1,3 +1,6 @@
+#![deny(warnings, missing_docs)]
+//! This crate generates invoices for a user.
+
 extern crate chrono;
 #[macro_use]
 extern crate clap;
@@ -15,6 +18,7 @@ mod invoice;
 mod ask;
 
 use std::collections::BTreeSet;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use invoice::{Invoice, InvoicePosition};
 
@@ -38,7 +42,7 @@ fn create_invoice(matches: &clap::ArgMatches<'static>) {
     let client = client::Client::new(url).expect("Invalid host");
     let query = BillingQuery::new(key_pair.public_key_bytes(), pub_key.fingerprint());
     let result = client
-        .since_latest_billing(&query)
+        .since_last_billing(&query)
         .expect("Error requesting the latest billing");
     if let Some(chain) = result {
         info!("Received subchain, calculating invoice...");
@@ -59,7 +63,16 @@ fn create_invoice(matches: &clap::ArgMatches<'static>) {
                 )
             })
             .collect::<BTreeSet<_>>();
+        if positions.is_empty() {
+            error!("No new usage transactions since the last billing operation. Exiting...");
+            std::process::exit(0);
+        }
         let invoice = Invoice::new(pub_key.clone(), positions);
+        let out_file = format!("{}_{}.txt", invoice.user(), timestamp());
+        info!("Writing invoice to file: {}", out_file);
+        invoice
+            .write_to_file(out_file)
+            .expect("Could not write invoice to file");
         println!("{}", invoice);
         if ask::ask("Write billing to blockchain") {
             info!("Creating billing block");
@@ -147,4 +160,11 @@ fn main() {
     } else if let Some(matches) = matches.subcommand_matches("create_invoice") {
         create_invoice(matches);
     }
+}
+
+fn timestamp() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Error while getting timestamp")
+        .as_secs()
 }

@@ -20,9 +20,9 @@ impl ServerState {
         }
     }
 
-    pub fn latest_billing(
+    pub fn last_billing(
         &self,
-        query: BillingQuery,
+        query: &BillingQuery,
     ) -> Result<Option<Blockchain>, BlockchainError> {
         if let Ok(chain) = self.chain.read() {
             let chain = chain.deref();

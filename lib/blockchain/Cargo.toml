@@ -15,7 +15,3 @@ failure = "0.1.1"
 [dev-dependencies]
 quickcheck = "0.5.0"
 tempdir = "0.3"
-
-[[bin]]
-name = "blockchain-bin"
-path = "src/main.rs"

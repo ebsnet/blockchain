@@ -1,6 +1,9 @@
 use std::cmp;
 use std::collections::BTreeSet;
 use std::fmt;
+use std::fs::File;
+use std::io::{self, BufWriter, Write};
+use std::path::Path;
 
 use chrono::naive::NaiveDateTime;
 
@@ -18,12 +21,16 @@ impl Invoice {
         Self { user, positions }
     }
 
-    pub fn user(&self) -> &PublicKey {
-        &self.user
+    pub fn write_to_file<P>(&self, path: P) -> io::Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        let mut writer = BufWriter::new(File::create(path)?);
+        write!(writer, "{}", self)
     }
 
-    pub fn positions(&self) -> &BTreeSet<InvoicePosition> {
-        &self.positions
+    pub fn user(&self) -> &PublicKey {
+        &self.user
     }
 }
 
@@ -47,14 +54,6 @@ impl InvoicePosition {
             date: NaiveDateTime::from_timestamp(date as i64, 0),
             usage,
         }
-    }
-
-    pub fn date(&self) -> NaiveDateTime {
-        self.date
-    }
-
-    pub fn usage(&self) -> u64 {
-        self.usage
     }
 }
 

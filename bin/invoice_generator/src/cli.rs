@@ -22,13 +22,13 @@ pub fn build_cli() -> ::clap::ArgMatches<'static> {
               (@subcommand initialize_billing =>
                (about: "Initialize the billing process associated with a public key")
                (version: VERSION.unwrap_or("unknown version"))
-               (@arg PUBKEY: -p --public-key +takes_value +required "Public key to initialize the billing process for")
+               (@arg PUBKEY: -p --publickey +takes_value +required "Public key to initialize the billing process for")
                (@arg HOST: -h --host +takes_value +required "URL of the webservice")
               )
               (@subcommand create_invoice =>
                (about: "Create an invoice for a public key")
                (version: VERSION.unwrap_or("unknown version"))
-               (@arg PUBKEY: -p --public-key +takes_value +required "Public key to initialize the billing process for")
+               (@arg PUBKEY: -p --publickey +takes_value +required "Public key to initialize the billing process for")
                (@arg HOST: -h --host +takes_value +required "URL of the webservice")
               )
              ).get_matches()

@@ -1,5 +1,5 @@
 [package]
-name = "worker"
+name = "webservice"
 version = "0.1.0"
 authors = ["Valentin Brandl <vbrandl@riseup.net>"]
 

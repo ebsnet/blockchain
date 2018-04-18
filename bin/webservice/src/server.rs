@@ -53,21 +53,13 @@ fn append(
         .map(|_| status::Custom(Status::Accepted, "block was appended"))
 }
 
-#[post("/since_latest_billing", format = "application/json", data = "<query>")]
-fn since_latest_billing(
+#[post("/since_last_billing", format = "application/json", data = "<query>")]
+fn since_last_billing(
     state: State<ServerState>,
     query: Json<BillingQuery>,
 ) -> Result<Option<Json<Blockchain>>, BlockchainError> {
-    state.latest_billing(query.0).map(|opt| opt.map(Json))
+    state.last_billing(&query.0).map(|opt| opt.map(Json))
 }
-
-// #[post("/user_tx", format = "application/json", data = "<key>")]
-// fn get_tx_from_user(
-//     state: State<ServerState>,
-//     key: Key,
-// ) -> Result<Json<Vec<Block>>, BlockchainError> {
-//     unimplemented!()
-// }
 
 pub fn prepare_server(
     state: ServerState,
@@ -82,7 +74,7 @@ pub fn prepare_server(
     Ok(::rocket::custom(config, true)
         .mount(
             "/",
-            routes![index, latest_block, append, since_latest_billing],
+            routes![index, latest_block, append, since_last_billing],
         )
         .manage(state))
 }
