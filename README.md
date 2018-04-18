@@ -70,8 +70,7 @@ export RUST_LOG="webservice=info,tx_generator=info,invoice_generator=info"
 
 1. Initialize billing for the user:
   ```
-  RUST_LOG="invoice_generator=info" ./invoice_generator -k billing.key initialize_billing -h http://localhost:1337/
-  --publickey user.pub
+  RUST_LOG="invoice_generator=info" ./invoice_generator -k billing.key initialize_billing -h http://localhost:1337/ --publickey user.pub
   ```
 
 1. Generate usage transactions:
@@ -81,6 +80,5 @@ export RUST_LOG="webservice=info,tx_generator=info,invoice_generator=info"
 
 1. Generate invoice for user:
   ```
-  RUST_LOG="invoice_generator=info" ./invoice_generator -k billing.key create_invoice --publickey user.pub -h
-  http://localhost:1337/
+  RUST_LOG="invoice_generator=info" ./invoice_generator -k billing.key create_invoice --publickey user.pub -h http://localhost:1337/
   ```
