@@ -24,6 +24,19 @@ Cryptography functions for handling key pairs, secure memory management, signing
 Exposes a concrete blockchain,
 
 
+## Building The Components
+
+This project was developed using the Rust nightly compiler from `2018-02-14`. Newer versions should work as well. To
+install this specific version run
+
+```
+rustup install nightly-2018-02-14
+```
+
+Alternatively everything can be build inside a Docker container using the `docker_build_musl.sh` and
+`docker_build_glibc.sh` scripts.
+
+
 ## Logging
 
 Log levels are handled via the `RUST_LOG` environment variable. The default log level is `error`. To view `info` logs
