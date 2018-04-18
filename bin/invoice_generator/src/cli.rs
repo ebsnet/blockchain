@@ -12,13 +12,6 @@ pub fn build_cli() -> ::clap::ArgMatches<'static> {
                (about: "Generates a new key pair")
                (version: "1.0")
               )
-              // (@subcommand generate_transaction =>
-              //  (about: "Generates a new transaction, mines a block and appends it to the blockchain")
-              //  (version: VERSION.unwrap_or("unknown version"))
-              //  (@arg KEYPAIR: -k --keypair +takes_value "Path to the key pair (Defaults to ./default.key)")
-              //  (@arg HOST: -h --host +takes_value +required "URL of the webservice")
-              //  (@arg USAGE: +required "Usage to be inserted into the blockchain")
-              // )
               (@subcommand initialize_billing =>
                (about: "Initialize the billing process associated with a public key")
                (version: VERSION.unwrap_or("unknown version"))
