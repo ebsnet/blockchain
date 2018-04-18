@@ -15,3 +15,7 @@
 
 
 # End of https://www.gitignore.io/api/rust
+default.key
+key2.pub
+pub_key
+key2.key
