@@ -238,7 +238,7 @@ mod tests {
         assert_eq!(head, None);
         let chain = chain.append(1);
         assert_eq!(chain.head(), Some(&1));
-        let (head, chain) = chain.tail();
+        let (_head, chain) = chain.tail();
         assert_eq!(chain.head(), None);
     }
 
