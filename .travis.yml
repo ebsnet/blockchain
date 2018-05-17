@@ -1,0 +1,73 @@
+dist: trusty
+
+language: rust
+
+services: docker
+
+sudo: required
+
+# cache: cargo
+cache:
+  directories:
+    - target
+    - cargo
+
+before_cache:
+  # - chmod -R a+r $HOME/.cargo
+  - sudo chown -R $USER cargo
+  - sudo chown -R $USER target
+  - chmod -R a+r cargo
+  - chmod -R a+r target
+
+notifications:
+  email:
+    on_success: never
+
+branches:
+  only:
+    - "/^v\\d+\\.\\d+\\.\\d+.*$/"
+    - master
+    - develop
+
+before_install:
+    - set -e
+    # - rustup self update
+    # - rustup install nightly-2018-02-14
+    # - rustup default nightly-2018-02-14
+# - rustup default nightly
+
+install:
+- sh ci/install.sh
+- source ~/.cargo/env || true
+
+script:
+- bash ci/script.sh
+
+after_script: set +e
+
+env:
+  global:
+  - CRATE_NAME=blockchain
+
+matrix:
+    include:
+        # - env: TARGET=x86_64-unknown-linux-gnu
+        #   rust: nightly
+        - env: TARGET=x86_64-unknown-linux-musl
+          rust: nightly
+        # - env: TARGET=x86_64-pc-windows-gnu
+        #   rust: nightly
+
+before_deploy:
+    - sh ci/before_deploy.sh
+
+deploy:
+  provider: releases
+  api_key:
+      secure: "LPPVA3/pj3N7VXefAqexDAuE1XPa20CIvExr/ZOSBZTrU7SiTZeiToKni9U2ZNSfk0HEctBv84v15u3R7YJ2CJX9d5tbKHO7DpGK/pZY0sPm8pcsTrcCYE7wiCUExZIMr9beKsX/t01o8QZOM8DMIt6yt22uxYUVYCjTgRGg66UQtTPxkMMBOPTfQyuXCgnaXvLe+TFem3dH9MwL8D1Cuer4oqEYMFK6/eTs0GJsbDslbhT6cfpiRTzpx4KgFLQGACq9NHELGr7m/gxqHS6t0Vu7H/HnOxwx9FJfKQIMPKhd2OjVg6XoJT0Yus0O6fn+eJ7HKJGGgEAYMxsVcft6tf+zLVbkGC44rFAzhaM2CSnW/hnjR09B91kBZfOfCU+ML2QAktc8CvJBdIQPfWfiEaVFsyBf9HY6EtvBmYiAA0sfk/Y6sfwL/uOqtv3CTKhTLaJROnRzAXRmOOOisPAnwX+lG9Qj5OhfGKGrMWufNjBhvyo9weR5cZ3AIkxBxRXOCGewrTu5qwzXjhYAT2jADO4/t64m5CCxeatrErg+cUxmiu0oMatGBFDNoZVqkeeoL+BSHSuH7batIJyqBsT85SDAmMimueOtiAUCJfc53OcW8SqSLYD2LGwrdP7sdCT8DwxqpJk0T2uZ4oO+C5hGhhJ8LU/XeNLlYvftOM/5wdw="
+  file_glob: true
+  file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
+  skip_cleanup: true
+  on:
+    condition: $TRAVIS_RUST_VERSION = nightly
+    tags: true
