@@ -3,7 +3,7 @@ const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 
 /// Builds the cli argument parser and parses the arguments.
 pub fn build_cli() -> ::clap::ArgMatches<'static> {
-    clap_app!(tx_generator =>
+    clap_app!(invoice_generator =>
               (version: VERSION.unwrap_or("unknown version")) // if not build using cargo
               (author: "Valentin Brandl <mail@vbrandl.net>")
               (about: "Invoice generator")
