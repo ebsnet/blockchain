@@ -54,9 +54,6 @@ pub enum PersistingError {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::io::prelude::*;
-
     #[derive(Default, Serialize, Debug)]
     struct Data {
         foo: u16,
