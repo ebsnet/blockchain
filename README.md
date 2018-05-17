@@ -5,7 +5,7 @@
 This repository is part of our challenge at [Hackaburg 2018](https://hackaburg.de/tracks.html#challenges). To make use
 of the CI and CD features, you should use the [gitflow](https://github.com/petervanderdoes/gitflow-avh/) workflow.
 Every commit made on `master` or `develop` will be build using [Travis CI](https://travis-ci.org/). Tagged commits, that
-match the regular expression `^v\\d+\\.\\d+\\.\\d+.*$` (e.g `v0.1.0`) will be built and uploaded to the [release
+match the regular expression `^v\d+\.\d+\.\d+.*$` (e.g `v0.1.0`) will be built and uploaded to the [release
 page](https://github.com/ebsnet/blockchain/releases). After uploading a new release, a webhook will be triggered and the
 new build is automatically deployed on `hackaburg.ebsnet.de`.
 
