@@ -70,36 +70,36 @@ export RUST_LOG="webservice=info,tx_generator=info,invoice_generator=info"
 
 1. Start the web service: (this will start a web server listening on `localhost:1337`, persisting the blockchain to
    `./blockchain.dat`; for more information view the help dialog by passing the `--help` flag)
-  ```
-  RUST_LOG="webservice=info" ./webservice
-  ```
+    ```
+    RUST_LOG="webservice=info" ./webservice
+    ```
 
 1. Generate a key pair for the user:
-  ```
-  RUST_LOG="tx_generator=info" ./tx_generator generate_keypair -p user.key
-  ```
+    ```
+    RUST_LOG="tx_generator=info" ./tx_generator generate_keypair -p user.key
+    ```
 
 1. Export the user's public key:
-  ```
-  RUST_LOG="tx_generator=info" ./tx_generator export_public_key -k user.key user.pub
-  ```
+    ```
+    RUST_LOG="tx_generator=info" ./tx_generator export_public_key -k user.key user.pub
+    ```
 
 1. Generate a key pair for the billing party:
-  ```
-  RUST_LOG="invoice_generator=info" ./invoice_generator -k billing.key generate_keypair
-  ```
+    ```
+    RUST_LOG="invoice_generator=info" ./invoice_generator -k billing.key generate_keypair
+    ```
 
 1. Initialize billing for the user:
-  ```
-  RUST_LOG="invoice_generator=info" ./invoice_generator -k billing.key initialize_billing -h http://localhost:1337/ --publickey user.pub
-  ```
+    ```
+    RUST_LOG="invoice_generator=info" ./invoice_generator -k billing.key initialize_billing -h http://localhost:1337/ --publickey user.pub
+    ```
 
 1. Generate usage transactions:
-  ```
-  RUST_LOG="tx_generator=info" ./tx_generator generate_transaction -h http://localhost:1337 <usage> -k user.key
-  ```
+    ```
+    RUST_LOG="tx_generator=info" ./tx_generator generate_transaction -h http://localhost:1337 <usage> -k user.key
+    ```
 
 1. Generate invoice for user:
-  ```
-  RUST_LOG="invoice_generator=info" ./invoice_generator -k billing.key create_invoice --publickey user.pub -h http://localhost:1337/
-  ```
+    ```
+    RUST_LOG="invoice_generator=info" ./invoice_generator -k billing.key create_invoice --publickey user.pub -h http://localhost:1337/
+    ```
